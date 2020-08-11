@@ -5,3 +5,7 @@ target/*
 node_modules/*
 .env
 .docker_env
+config/.yarn
+config/node_modules
+config/.pnp.js
+config/yarn.lock
