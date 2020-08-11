@@ -311,7 +311,7 @@ class BlockExpr extends Expr {
 
         node.value.forEach((expr) => {
             // Terminating conditions for sub-blocks.
-            if(subBlock == null || !("append" in subBlock) || !subBlock.append(cell, node)) {
+            if(subBlock == null || !("append" in subBlock) || !subBlock.append(cell, expr)) {
                 // Will return false if it's not a valid node that can be added.
                 // End-current block
                 if(subBlock) { expressions.push(subBlock); }
@@ -486,7 +486,7 @@ class ConditionalClauseExpr extends Expr {
             if(this.alternative) {
                 cond_code += this.alternative.emitJS(target);
             } else {
-                cond_code += " null"
+                cond_code += " null "
             }
 
             return cond_code
@@ -523,6 +523,8 @@ class ConditionalClauseExpr extends Expr {
             let body = astToExpr(cell, node.value[1]);
             return new ConditionalClauseExpr(cell, node, condition, body);
         } else {
+            console.log("Conditional else clause");
+            console.log(node)
             // Last else clause
             let body = astToExpr(cell, node.value[0]);
             return new ConditionalClauseExpr(cell, node, null, body);
@@ -544,18 +546,23 @@ class ConditionalExpr extends Expr {
     append(cell, node) {
         // Disallow adding more clauses after the final "else" clause.
         if(this.conditions && this.conditions[this.conditions.length - 1].isTerminal()) {
+            console.log("Conditional node is terminal");
+            console.log(treeify.asTree(this.conditions[this.conditions.length - 1].debug(), true))
             return false;
         }
         
+        console.log("Conditional node type: " + node.node_type);
+        console.log(node);
+        // TODO: Check if starts with (else) for chaining
+        // if(node.node_type == TOKEN_HEADER && node.value[0].node_type == "(if)") {
+            let branch = ConditionalClauseExpr.parse(cell, node);
 
-        // TODO - Add support for else-case
-        // if(node.node_type == TOKEN_HEADER) {
-        //     this.kv_list.push(MapEntryExpr.parse(cell, node))
-        //     return true
+            this.conditions[this.conditions.length - 1].alternative = branch;
+            this.conditions.push(branch)
+            return true;            
         // }
-        
-        // TODO: Set condition.alternative for this.conditions[-1]
-        return false
+
+        // return false
     }
 
     debug() {
