@@ -3,6 +3,7 @@
 dist/*
 target/*
 node_modules/*
+package-lock.json
 .env
 .docker_env
 config/.yarn

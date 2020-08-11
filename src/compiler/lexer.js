@@ -1,4 +1,4 @@
-import { Queue } from "../utils"
+import { Queue } from "@appassembly/shared"
 import { 
     LiteralNode, IdentifierNode, OperatorNode, 
     KEYWORD_TABLE, syntaxError,
@@ -55,18 +55,18 @@ class LexIterator {
 
     startBlock(level, char_start) {
         this.block_levels.push(level)
-        this.tokens.push(new OperatorNode(START_BLOCK, char_start, this.index))
+        this.tokens.push(OperatorNode(START_BLOCK, char_start, this.index))
     }
 
     continueBlock(char_start) {
-        this.tokens.push(new OperatorNode(CONTINUE_BLOCK, char_start, this.index))
+        this.tokens.push(OperatorNode(CONTINUE_BLOCK, char_start, this.index))
     }
 
     endBlock(level, char_start) {
         // May end multiple blocks in one go
         while(level < this.currentBlock()) {
             this.block_levels.pop();
-            this.tokens.push(new OperatorNode(END_BLOCK, char_start, this.index));
+            this.tokens.push(OperatorNode(END_BLOCK, char_start, this.index));
         }
 
         if(this.block_levels.length > 0 && level != this.currentBlock()) {

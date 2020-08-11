@@ -1,6 +1,7 @@
 import { execJs } from "./executor"
 import { defineNamespace } from "./namespace"
-import { compileJS } from "./compiler";
+import { compileJS } from "./compiler"
+import { CellEnv } from "./CellEnv"
 
 function runGenerated(env) {
     defineNamespace(env.root)
@@ -25,3 +26,10 @@ function runGenerated(env) {
 }
 
 
+export function evaluate(byId, rootId) {
+    let env = new CellEnv();
+    env.create(byId, rootId);
+    env.parseAll(rootId);
+    let output = runGenerated(env);
+    return {'results': output}
+}

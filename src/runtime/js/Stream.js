@@ -1,4 +1,4 @@
-import { __aa_call } from "../utils"
+import { __aa_call } from "@appassembly/shared"
 
 const OP_FILTER = 1;
 const OP_MAP = 2;

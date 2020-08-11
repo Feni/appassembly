@@ -1,5 +1,5 @@
-import { Cell } from './Cell.js';
-import { CellEnv } from "./CellEnv";
+import { Cell } from '@appassembly/compiler/Cell.js';
+import { CellEnv } from "@appassembly/compiler/CellEnv";
 
 
 const ROOT_ID = 0;

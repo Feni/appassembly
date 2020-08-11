@@ -1,4 +1,4 @@
-import { genID, isObject, isFunction } from "../utils"
+import { genID, isObject, isFunction } from "@appassembly/shared"
 
 export class Obj {
     /*

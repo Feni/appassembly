@@ -1,5 +1,5 @@
-import { lex } from "./lexer"
-import { parseExpr } from "./parser"
+// import { lex } from "@appassembly/compiler/lexer.js"
+import { parseExpr } from "@appassembly/compiler/parser.js"
 
 
 test('test add multiply precedence', () => {

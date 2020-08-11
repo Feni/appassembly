@@ -1,5 +1,5 @@
-import { Obj, KeySignature, Param } from "./flex"
-import { Stream } from "./Stream"
+import { Obj, KeySignature, Param } from "@appassembly/runtime/flex.js"
+import { Stream } from "@appassembly/runtime/Stream.js"
 
 test('Object with obj keys', () => {
     // When cells don't depend on each other, their order remains the same

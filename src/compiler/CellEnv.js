@@ -1,8 +1,7 @@
 import { Cell } from "./Cell";
 import { addDependency } from "./order.js"
-import { traverseDown, traverseDownCell, traverseUp } from "./iter.js"
+import { traverseDown, traverseDownCell, traverseUp } from "@appassembly/shared/iter"
 import { parseExpr } from "./parser"
-import { astToJs } from "./generator";
 import { astToExpr } from "./compiler"
 
 var treeify = require('treeify');

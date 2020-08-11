@@ -1,4 +1,4 @@
-import { QIter } from "../utils"
+import { QIter } from "@appassembly/shared"
 import { lex } from "./lexer"
 
 /*

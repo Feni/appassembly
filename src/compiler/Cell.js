@@ -1,4 +1,5 @@
 const hamt = require('hamt');
+import { orderCellBody } from "./order"
 
 export class Cell {
     constructor(cell, parent, env) {
@@ -38,6 +39,10 @@ export class Cell {
 
     getCellName() {
         return this.name ? this.name : "__" + this.id;
+    }
+
+    orderCellBody() {
+        return orderCellBody(this)
     }
 
 }
