@@ -159,7 +159,7 @@ class KeySignatureExpr extends Expr {
         // let paramSig = this.quoteParamJs(target);
         let paramSig = this.params instanceof ParamsExpr ? this.params.emitSignature(target) : "[]";
         let guardSig = this.guard ? this.guard.emitJS(target) : "null";
-        let nameSig = this.name instanceof Expr ? '"' + this.name.emitJS(target) + '"' : '""';
+        let nameSig = this.name ? '"' + this.name + '"' : '""';
 
         return target.create("KeySignature", nameSig, "null", paramSig, guardSig);
     }
@@ -195,14 +195,13 @@ class KeySignatureExpr extends Expr {
     static parse(cell, node) {
         switch(node.node_type) {
             case "(identifier)":
-                // return new KeySignatureExpr(cell, node, astToExpr(cell, node))
-                return astToExpr(cell, node)
+                return new KeySignatureExpr(cell, node, node.value)
             case "(grouping)":
                 var params = ParamsExpr.parse(cell, node);
-                return new KeySignatureExpr(cell, node, '""', "null", params)
+                return new KeySignatureExpr(cell, node, "", "null", params)
             case "(guard)":
                 var guard = GuardExpr.parse(cell, node);
-                return new KeySignatureExpr(cell, node,  '""', "null", guard.params, guard)
+                return new KeySignatureExpr(cell, node,  "", "null", guard.params, guard)
             default:
                 // Note: Flat keys are not wrapped in a key signature.
                 return astToExpr(cell, node)
@@ -243,18 +242,13 @@ class MapEntryExpr extends Expr {
     getValJS(target) {
         let valName = target.newVariable();
         let valJS;
-        if(this.key instanceof KeySignatureExpr) {
+        if(this.key instanceof KeySignatureExpr && this.key.params instanceof ParamsExpr) {
             let params = this.key.getParamJS(target);
-            // if(params) {
-                valJS = target.lambdaDeclaration(params, this.value.emitJS(target));
-            // } else {
-            //     valJS = this.value.emitJS(target);
-            // }
+            valJS = target.lambdaDeclaration(params, this.value.emitJS(target));
         }
         else {
             valJS = this.value.emitJS(target);
         }
-        
         target.emit(target.declaration(valName, valJS + ";\n"));
         
         let repr = getNodeText(this.cell, this.value.node);
@@ -324,7 +318,6 @@ class BlockExpr extends Expr {
             expressions.push(subBlock);
         }
         
-
         return new BlockExpr(cell, node, expressions);
     }
 }

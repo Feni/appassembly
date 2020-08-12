@@ -9,6 +9,37 @@ function listToDict(list, key="id") {
     return d
 }
 
+function evalExprs(exprs) {
+    let byId = {
+        "root": {
+            id: "root",
+            name: "",
+            expr: "",
+            depends_on: [],
+            
+            body: [],
+            params: []
+        },
+    }
+
+    exprs.forEach((expr, index) => {
+        byId.root.body.push(index)
+        byId[index] = {
+            id: index, 
+            name: expr.name ? expr.name : "",
+            expr: expr.expr, 
+            depends_on: expr.depends_on ? expr.depends_on : [],
+            body: expr.body ? expr.body : [],
+            params: expr.params ? expr.params : []
+        }
+    })
+
+    let output = evaluate(byId, "root").results;
+    let outputDict = listToDict(output)
+    return outputDict
+}
+
+
 test('Evaluate basic expressions', () => {
     // When cells don't depend on each other, their order remains the same
     let byId = {
@@ -57,35 +88,6 @@ test('Evaluate basic expressions', () => {
     expect(outputDict[3].value).toEqual(4)
 });
 
-function evalExprs(exprs) {
-    let byId = {
-        "root": {
-            id: "root",
-            name: "",
-            expr: "",
-            depends_on: [],
-            
-            body: [],
-            params: []
-        },
-    }
-
-    exprs.forEach((expr, index) => {
-        byId.root.body.push(index)
-        byId[index] = {
-            id: index, 
-            name: expr.name ? expr.name : "",
-            expr: expr.expr, 
-            depends_on: expr.depends_on ? expr.depends_on : [],
-            body: expr.body ? expr.body : [],
-            params: expr.params ? expr.params : []
-        }
-    })
-
-    let output = evaluate(byId, "root").results;
-    let outputDict = listToDict(output)
-    return outputDict
-}
 
 test('Eval order of ops', () => {
     expect(evalExprs([{expr: "(2 + 3) * 4"}])[0].value).toEqual(20)
