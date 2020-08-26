@@ -30,6 +30,8 @@ export const TOKEN_THEN = "(then)";
 export const TOKEN_DEFAULT = "(default)";
 export const TOKEN_APPLY = "apply";     // TODO: Consistency
 export const TOKEN_MEMBER = "(member)";
+export const TOKEN_RANGE = "(range)";
+export const TOKEN_COMMA = "(comma)";
 
 class ParseIterator extends QIter {
     constructor(queue) {
@@ -290,6 +292,25 @@ const COND_THEN = new Mixfix("then", 20, Prefix.get_null_denotation(TOKEN_THEN),
 const COND_ELSE = new Mixfix("else", 20, Prefix.get_null_denotation(TOKEN_ELSE), Infix.get_left_denotation(TOKEN_ELSE, 20));
 const COND_DEFAULT = new Mixfix("default", 20, Prefix.get_null_denotation(TOKEN_DEFAULT), Infix.get_left_denotation(TOKEN_DEFAULT, 20));
 
+let RANGE = new Keyword("..", 11);
+RANGE.null_denotation = (node, token_stream) => {
+    if(token_stream.currentKeyword() == ",") {
+        node.left = token_stream.current();
+        token_stream.next();
+        node.right = expression(token_stream, 10);
+    }
+    else if(token_stream.currentKeyword() != "]") {   // Don't eat the group end.
+        node.left = expression(token_stream, 10);       // 100? or 10?
+    }
+    node.node_type = TOKEN_RANGE
+    return node
+}
+
+RANGE.left_denotation = (left, node, token_stream) => {
+    node.left = left;
+    node.right = expression(token_stream, 10)
+    return node;
+}
 
 // , 10
 
@@ -345,8 +366,6 @@ const PARENS = new Grouping("(", 150, TOKEN_GROUPING, TOKEN_APPLY, ")");
 // TODO: Is there a LED for this? f{ a }
 const CURLY_BK = new Prefix("{", 150,
 Grouping.get_null_denotation(TOKEN_HEADER, "}"))
-
-
 
 class SyntaxError extends Error {
     constructor(message) {

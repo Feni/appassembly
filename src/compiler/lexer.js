@@ -115,14 +115,20 @@ function parseNumber(it) {
         char_end--;
         break;
     }
-    it.index = char_end;
-    let num_str = it.expr.slice(char_start, char_end)
-    if(num_str === '.') {
-        return OperatorNode(KEYWORD_TABLE['.'], char_start, char_end)
-    } else {
-        return LiteralNode(parseFloat(num_str), char_start, char_end);
+    // Break up terminal dots into a separate token so we can suport [5..]
+    if(it.expr[char_end] == '.') {
+        char_end--;
     }
     
+    it.index = char_end;
+    let num_str = it.expr.slice(char_start, char_end)
+
+    if(num_str === '.') {
+        return OperatorNode(KEYWORD_TABLE['.'], char_start, char_end)
+    } 
+    else {
+        return LiteralNode(parseFloat(num_str), char_start, char_end);
+    }
 }
 
 function parseString(it) {
@@ -164,6 +170,14 @@ function parseString(it) {
     }
 
     return LiteralNode(token, char_start, it.index)
+}
+
+function parseDot(it) {
+    let token;
+    token = parseKeyword(it, 3);        // ...
+    token = token ? token : parseKeyword(it, 2) // ..
+    token = token ? token : parseNumber(it, false)
+    return token
 }
 
 function parseSymbol(it) {
@@ -252,10 +266,11 @@ export function lex(expr) {
         if(isWhitespace(ch)) {  // Some whitespace is meaningful when changing indentation level.
             // Indentation tokens are added directly if valid
             parseWhitespace(it);
-        } else if(isDigit(ch) || ch == '.') {   // + or - will be handled by parser as unary ops
+        } else if(isDigit(ch)) {   // + or - will be handled by parser as unary ops. || ch == '.'
             token = parseNumber(it, false)
-        }
-        else if (ch == '"' || ch == "'") {
+        } else if(ch == '.') {
+            token = parseDot(it)
+        } else if (ch == '"' || ch == "'") {
             token = parseString(it)
         } else if (isDelimiter(ch)) {
             // Treat ch like a prefix and greedily consume the best operator match
@@ -266,6 +281,7 @@ export function lex(expr) {
             if(!token) {
                 it.next();
             }
+
         } else {
             token = parseSymbol(it);    // identifiers
         }

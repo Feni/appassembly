@@ -110,3 +110,18 @@ test('test multiblock conditional', () => {
     console.log(result);
     expect(result.toString()).toEqual("({ (: 0 1) (: ((grouping) x y) ((startblock) (: (if (or (< x y) (> x 23))) x) (: (if (> x y)) y) (: (if (== x y)) Equal))))")
 })
+
+test('test range', () => {
+    let expr, result;
+    expr = '[1, 2, 3, .., 10, 20]';
+    result  = parseExpr(expr);
+    expect(result.toString()).toEqual("([ 1 2 3 (.. (,) 10) 20)")
+
+    expr = '[10, 20, ..100]';
+    result  = parseExpr(expr);
+    expect(result.toString()).toEqual("([ 10 20 (.. 100))")
+
+    expr = '[5..]';
+    result  = parseExpr(expr);
+    expect(result.toString()).toEqual("([ (.. 5))")    
+});

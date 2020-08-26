@@ -343,33 +343,27 @@ export class Stream {
 
             let s;
             if(is_add_step) {
-                s = new Stream([function* () {
-                    if(step > 0) {
-                        for(var i = start; i < end; i += step) {
-                            yield i
-                        }
-                    } else {
-                        for(var i = start; i > end; i += step) {
-                            yield i
-                        }                        
-                    }
-
-                }])
+                if(step > 0) {
+                    s = new Stream([function* () {
+                        for(var i = start; i < end; i += step) {    yield i     }
+                    }]);
+                } else {
+                    s = new Stream([function* () {
+                        for(var i = start; i > end; i += step) {    yield i     }
+                    }])
+                }
                 s.sized = true;
-                s.length = Math.ceil((stop-start) / step)
+                s.length = Math.ceil(Math.abs(stop-start) / Math.abs(step))
             } else {
-                s = new Stream([function* () {
-                    if(step > 0) {
-                        for(var i = start; i < end; i *= step) {
-                            yield i
-                        }
-                    } else {
-                        for(var i = start; i > end; i *= step) {
-                            yield i
-                        }                        
-                    }
-
-                }])
+                if(step > 0) {
+                    s = new Stream([function* () {
+                        for(var i = start; i < end; i *= step) {    yield i     }
+                    }])
+                } else {
+                    s = new Stream([function* () {
+                        for(var i = start; i > end; i *= step) {    yield i     }
+                    }])
+                }
                 // TODO: Calculate size
             }
             
@@ -382,21 +376,13 @@ export class Stream {
         } else {
             // Nothing after. Infinite stream.
             if(is_add_step) {
-                return new Stream([
-                    function* () {
-                        for(var i = start; true; i += step) {
-                            yield i
-                        }
-                    }
-                ])
+                return new Stream([function* () {
+                        for(var i = start; true; i += step) {   yield i     }
+                }])
             } else {
-                return new Stream([
-                    function* () {
-                        for(var i = start; true; i *= step) {
-                            yield i
-                        }
-                    }
-                ])
+                return new Stream([function* () {
+                        for(var i = start; true; i *= step) {   yield i     }
+                }])
             }
         }
     }
