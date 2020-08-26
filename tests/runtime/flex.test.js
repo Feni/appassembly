@@ -153,3 +153,47 @@ test('stream fold', () => {
 //     // expect(fibo.call(7)).toEqual(13)
 // });
 
+
+
+test('list generators', () => {
+    // [1..]
+    // [..-1]  = -infinity -> -1 = reverse a list
+        
+    // ["0".., "9"]
+    // [1, 1, f(x), .., 100]
+
+    // [1..10] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    expect(Array.from(Stream.generate([1], [10]).iter())).toEqual([
+        1, 2, 3, 4, 5, 6, 7, 8, 9
+    ])
+
+    // [1, 3..10] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    expect(Array.from(Stream.generate([1, 3], [10]).iter())).toEqual([
+        1, 3, 5, 7, 9
+    ])
+
+    // [5, 10, ..]
+    expect(Array.from(Stream.generate([5, 10], []).first(5))).toEqual([
+        5, 10, 15, 20, 25
+    ])
+
+    // [100, 90, .., 10, 0]
+    let result = Array.from(Stream.generate([100, 90], [10, 0], true).iter());
+    expect(result).toEqual([
+        100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0
+    ])
+
+    // Div-based power step
+    // [2, 4, 8, .., 256]
+    result = Array.from(Stream.generate([2, 4, 8], [256], true).iter());
+    expect(result).toEqual([
+        2, 4, 8, 16, 32, 64, 128, 256
+    ])
+
+    // [..5]  = [0, 1, 2, 3, 4]
+    result = Array.from(Stream.generate([], [5]).iter());
+    expect(result).toEqual([
+        0, 1, 2, 3, 4
+    ])
+
+})

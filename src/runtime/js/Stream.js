@@ -1,4 +1,4 @@
-import { __aa_call } from "@appassembly/shared"
+import { __aa_call, delta, deltaDiv, getStep, isCallable } from "@appassembly/shared"
 
 const OP_FILTER = 1;
 const OP_MAP = 2;
@@ -301,6 +301,106 @@ export class Stream {
         return s;
     }
 
+    static generate(before, after, inclusive=false) {
+        let start = 0;
+        let step = 1;
+        let is_add_step = true;
+        let end = null;
+        let fn = null;
+
+        if(before.length >= 1) {
+            start = before[0];
+            let last = before[before.length - 1];
+            if(isCallable(last)) {
+                fn = last;
+            } else {
+                let before_sub = delta(before);
+                let before_div = deltaDiv(before);
+
+                if(before_sub.length > 0) {
+                    let sub_step = getStep(before_sub);
+                    let div_step = getStep(before_div);
+
+                    
+                    if(sub_step !== false) {
+                        is_add_step = true;
+                        step = sub_step;
+                    } else if(div_step !== false) {
+                        is_add_step = false;
+                        step = div_step
+                    } else {
+                        throw Error("Range error: Irregular step sizes.")
+                    }
+                }
+            }
+        }
+
+        // Stream of before + concat after
+        if(after.length >= 1) {
+            end = after[0];
+
+            // TODO: Handle callable fn
+
+            let s;
+            if(is_add_step) {
+                s = new Stream([function* () {
+                    if(step > 0) {
+                        for(var i = start; i < end; i += step) {
+                            yield i
+                        }
+                    } else {
+                        for(var i = start; i > end; i += step) {
+                            yield i
+                        }                        
+                    }
+
+                }])
+                s.sized = true;
+                s.length = Math.ceil((stop-start) / step)
+            } else {
+                s = new Stream([function* () {
+                    if(step > 0) {
+                        for(var i = start; i < end; i *= step) {
+                            yield i
+                        }
+                    } else {
+                        for(var i = start; i > end; i *= step) {
+                            yield i
+                        }                        
+                    }
+
+                }])
+                // TODO: Calculate size
+            }
+            
+            if(inclusive) {
+                return s.concat(Stream.array(after))
+            } else if(after.length >= 2) {
+                return s.concat(Stream.array(after.slice(1)))
+            }
+            return s
+        } else {
+            // Nothing after. Infinite stream.
+            if(is_add_step) {
+                return new Stream([
+                    function* () {
+                        for(var i = start; true; i += step) {
+                            yield i
+                        }
+                    }
+                ])
+            } else {
+                return new Stream([
+                    function* () {
+                        for(var i = start; true; i *= step) {
+                            yield i
+                        }
+                    }
+                ])
+            }
+        }
+    }
+
     // TODO: These internal methods should not be exposed
     static array(arr) {
         // Wraps an array object in an iterator
@@ -404,7 +504,6 @@ export class Stream {
             }
             yield val.value
         }
-        
     }
 
 }

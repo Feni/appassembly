@@ -19,7 +19,7 @@ function runGenerated(env) {
         output.push({
             id: cell.id,
             value: cellResult.value,
-            error: cell.error ? cell.error : cellResult.error
+            error: cell.error ? cell.error : cellResult.error,
         })
     })
 
