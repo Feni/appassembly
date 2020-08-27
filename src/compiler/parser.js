@@ -295,20 +295,22 @@ const COND_DEFAULT = new Mixfix("default", 20, Prefix.get_null_denotation(TOKEN_
 let RANGE = new Keyword("..", 11);
 RANGE.null_denotation = (node, token_stream) => {
     if(token_stream.currentKeyword() == ",") {
-        node.left = token_stream.current();
+        node.inclusive = true;
+        // node.left = token_stream.current();
         token_stream.next();
         node.right = expression(token_stream, 10);
     }
     else if(token_stream.currentKeyword() != "]") {   // Don't eat the group end.
-        node.left = expression(token_stream, 10);       // 100? or 10?
+        node.right = expression(token_stream, 10);       // 100? or 10?
     }
     node.node_type = TOKEN_RANGE
     return node
 }
 
 RANGE.left_denotation = (left, node, token_stream) => {
+    node.node_type = TOKEN_RANGE
     node.left = left;
-    node.right = expression(token_stream, 10)
+    node.right = expression(token_stream, 10);
     return node;
 }
 

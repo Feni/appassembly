@@ -4,7 +4,7 @@ and either evaluates or generates bytecode
 */
 
 import { JS_PRE_CODE, JS_POST_CODE } from "@appassembly/shared/constants"
-import { syntaxError, TOKEN_HEADER, TOKEN_COND } from "./parser";
+import { syntaxError, TOKEN_HEADER, TOKEN_COND, CONTINUE_BLOCK } from "./parser";
 import { getNodeText } from "@appassembly/shared/ast"
 
 var treeify = require('treeify');
@@ -373,10 +373,15 @@ class ArrayExpr extends Expr {
     constructor(cell, node, elements) {
         super(cell, node)
         this.elements = elements;
+        this.range_expr = null;
     }
     emitJS(target) {
-        let elements_js = this.elements.map((elem) => elem.emitJS(target))
-        return target.functionCall("Stream.array", target.array(elements_js))
+        if(this.range_expr == null) {
+            let elements_js = this.elements.map((elem) => elem.emitJS(target))
+            return target.functionCall("Stream.array", target.array(elements_js))
+        } else {
+            return this.range_expr.emitJS(target);
+        }
     }
 
     debug() {
@@ -387,8 +392,64 @@ class ArrayExpr extends Expr {
         }
     }    
     static parse(cell, node) {
-        let elements = node.value.map((elem) => astToExpr(cell, elem))
-        return new ArrayExpr(cell, node, elements);
+        let axp = new ArrayExpr(cell, node, []);
+        axp.elements = node.value.map((elem) => {
+            let elemNode = astToExpr(cell, elem);
+            if(elemNode instanceof RangeExpr) {
+                if(axp.range_expr !== null) {
+                    syntaxError("Multiple range expressions found in array")
+                }
+                axp.range_expr = elemNode;
+                elemNode.arr = axp;
+            }
+
+            return elemNode
+        })
+        return axp;
+    }
+}
+
+class RangeExpr extends Expr {
+    constructor(cell, node, left=null, right=null) {
+        super(cell, node);
+        this.left = left;
+        this.right = right;
+        this.arr = null;
+    }
+    emitJS(target) {
+
+        let inclusive = this.node.inclusive ? true : false;
+        let rangeIndex = this.arr.elements.indexOf(this);
+        let before = this.arr.elements.slice(0, rangeIndex);
+        if(this.left) {
+            before.push(this.left);
+        }
+        
+        let after = this.arr.elements.slice(rangeIndex + 1)
+        if(this.right) {
+            after.unshift(this.right);  // prepend
+        }
+
+
+        return target.functionCall("Stream.generate", 
+        target.array(before.map((e) => e.emitJS(target)) ), 
+        target.array(after.map((e) => e.emitJS(target))), 
+        inclusive )
+    }
+
+    debug() {
+        return {
+            RangeExpr: {
+                left: this.left ? this.left.debug() : "null",
+                right: this.right ? this.right.debug() : "null",
+            }
+        }
+    }
+
+    static parse(cell, node) {
+        let left = node.left ? astToExpr(cell, node.left) : null;
+        let right = node.right ? astToExpr(cell, node.right) : null;
+        return new RangeExpr(cell, node, left, right)
     }
 }
 
@@ -825,11 +886,10 @@ export function astToExpr(cell, node) {
             return KeySignatureExpr.parse(cell, node)
         case "(if)":
             return ConditionalExpr.parse(cell, node)
+        case "(range)":
+            return RangeExpr.parse(cell, node)
         default:
             console.log("Unknown AST node type: " + node.node_type);
-        
-        
-        
     }
 }
 

@@ -209,3 +209,18 @@ test('Conditions', () => {
     expect(result[3].value).toEqual("Equal")
 });
 
+
+test('Generator ranges', () => {
+    let prog = [
+        { expr: '[1..10]' }, 
+        { expr: '[1, 3 .. 10]' }, 
+        { expr: '[5, 10 .. 100]' }, 
+        { expr: '[100, 90, .., 10, 0]' }, 
+    ]
+    let result = evalExprs(prog);
+    expect(Array.from(result[0].value.iter())).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(Array.from(result[1].value.iter())).toEqual([1, 3, 5, 7, 9])
+    expect(Array.from(result[2].value.first(5))).toEqual([5, 10, 15, 20, 25])
+    expect(Array.from(result[3].value.iter())).toEqual([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
+
+});
