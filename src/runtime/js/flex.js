@@ -142,6 +142,10 @@ export class Obj {
         }
     }
 
+    get(attr) {
+        return this.getAttr(attr)
+    }
+
     getAttr(attr) {
         if(this.hasKey(attr)) {
             return this.lookup(attr);
