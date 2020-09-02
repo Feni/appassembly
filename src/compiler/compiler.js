@@ -213,13 +213,16 @@ class KeySignatureExpr extends Expr {
 class HeaderExpr extends Expr {
 
     static parse(cell, node) {
-        let [k, v] = node.value;
-
-        if(k.node_type == TOKEN_COND) {
-            return ConditionalExpr.parse(cell, node);
+        if(Array.isArray(node.value)) {
+            let [k, v] = node.value;
+            if(k.node_type == TOKEN_COND) {
+                return ConditionalExpr.parse(cell, node);
+            } else {
+                // key = astToExpr(cell, k);
+                return MapExpr.parse(cell, node);
+            }
         } else {
-            // key = astToExpr(cell, k);
-            return MapExpr.parse(cell, node);
+            return astToExpr(cell, node);
         }
     }
 }
@@ -267,7 +270,6 @@ class MapEntryExpr extends Expr {
 
     static parse(cell, node) {
         let [k, v] = node.value;
-
         let key = KeySignatureExpr.parse(cell, k);
         let value = astToExpr(cell, v);
         return new MapEntryExpr(cell, node, key, value);
@@ -281,9 +283,9 @@ class BlockExpr extends Expr {
     }
 
     emitJS(target) {
-        let js = "";
+        let js = []
         this.expressions.forEach((expr) => {
-            js += expr.emitJS(target);
+            js.push(expr.emitJS(target))
         })
         return js;
     }
@@ -312,6 +314,7 @@ class BlockExpr extends Expr {
 
                 // Start new block based on the first key type.
                 subBlock = HeaderExpr.parse(cell, expr);
+
             }
         })
         if(subBlock) {
@@ -766,10 +769,18 @@ class JSCodeGen extends CodeGen {
     }
 
     lambdaDeclaration(params, body) {
-        return `( ${params.join(",")} ) => {
-            return ${ body }
+        if(Array.isArray(body)) {
+            return `( ${params.join(",")} ) => {
+                ${ body.slice(0, -1).join("\n") }
+                return ${ body[body.length - 1] }
+            }
+            `
+        } else {
+            return `( ${params.join(",")} ) => {
+                return ${ body }
+            }
+            `
         }
-        `
     }
 
     method(obj, fn, ...args) {

@@ -224,3 +224,16 @@ test('Generator ranges', () => {
     expect(Array.from(result[3].value.iter())).toEqual([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
 
 });
+
+test('Expr blocks', () => {
+    let prog = [
+        { name: "ex1", expr: '(x): \n\t1'},
+        { name: "ex2", expr: '(x): \n\t1\n\t2'},
+        { expr: 'ex1(0)'},
+        { expr: 'ex2(0)'}
+    ]
+
+    let result = evalExprs(prog);
+    expect(result[2].value).toEqual(1)
+    expect(result[3].value).toEqual(2)
+});
