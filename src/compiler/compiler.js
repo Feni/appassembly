@@ -565,23 +565,20 @@ class ConditionalClauseExpr extends Expr {
     }    
 
     static parse(cell, node) {
-        if(node.value.length == 2) {
-            let condition;
-            
-            if(node.value[0].node_type == "(if)") {
-                // The condition node itself would loop back here.
-                // Extract the inner conditional portion instead.
-                condition = astToExpr(cell, node.value[0].left);
-                // assert: right & value are null.
-            } else {
+        if(node.value.length == 2) {    // Tuple of Predicate, Body
+            let predicateNode = node.value[0];
+
+            if(predicateNode.node_type !== "(else)") {
                 syntaxError("Unexpected node found in condition " + node.value[0])
             }
 
+            // Extract the inner predicate clause condition from the predicate branch.
+            // predicateNode.left = (if) node. .left of that is the actual condition code.
+            let condition = astToExpr(cell, predicateNode.left.left);
+            // assert: predicateNode.right & value are null.
             let body = astToExpr(cell, node.value[1]);
             return new ConditionalClauseExpr(cell, node, condition, body);
         } else {
-            console.log("Conditional else clause");
-            console.log(node)
             // Last else clause
             let body = astToExpr(cell, node.value[0]);
             return new ConditionalClauseExpr(cell, node, null, body);
@@ -603,23 +600,19 @@ class ConditionalExpr extends Expr {
     append(cell, node) {
         // Disallow adding more clauses after the final "else" clause.
         if(this.conditions && this.conditions[this.conditions.length - 1].isTerminal()) {
-            console.log("Conditional node is terminal");
-            console.log(treeify.asTree(this.conditions[this.conditions.length - 1].debug(), true))
+            // console.log("Conditional node is terminal");
+            // console.log(treeify.asTree(this.conditions[this.conditions.length - 1].debug(), true))
             return false;
         }
-        
-        console.log("Conditional node type: " + node.node_type);
-        console.log(node);
-        // TODO: Check if starts with (else) for chaining
-        // if(node.node_type == TOKEN_HEADER && node.value[0].node_type == "(if)") {
-            let branch = ConditionalClauseExpr.parse(cell, node);
+        // Validate - this is an else/else-if clause.
+        if(node.node_type != TOKEN_HEADER || node.value[0].node_type != "(else)") {
+            return false
+        }
 
-            this.conditions[this.conditions.length - 1].alternative = branch;
-            this.conditions.push(branch)
-            return true;            
-        // }
-
-        // return false
+        let branch = ConditionalClauseExpr.parse(cell, node);
+        this.conditions[this.conditions.length - 1].alternative = branch;
+        this.conditions.push(branch)
+        return true;
     }
 
     debug() {
@@ -631,16 +624,16 @@ class ConditionalExpr extends Expr {
     }    
 
     static parse(cell, node) {
-        // let conditions = node.value.map( (condition_node) => {
-        //     console.log(condition_node)
-        //     // TODO: Support if-else chains properly
-        //     if(condition_node.node_type != TOKEN_COND) { syntaxError("Unexpected node found in conditional chain " + condition_node)}
-        //     return ConditionalClauseExpr.parse(cell, condition_node)
-        // });
-        let conditions = [ConditionalClauseExpr.parse(cell, node)];
-        // TODO: Validate - first condition has a header, not an else clause.
-
-        return new ConditionalExpr(cell, node, conditions);
+        // Ensure, first header node starts with an "if" clause. 
+        if(node.value && node.value[0].node_type == "(if)") {
+            let condition = astToExpr(cell, node.value[0].left);
+            let body = astToExpr(cell, node.value[1]);
+            let clauses = [new ConditionalClauseExpr(cell, node, condition, body)]
+            return new ConditionalExpr(cell, node, clauses);
+        } else {
+            syntaxError("Unexpected node found in condition " + node)
+        }
+        // Further clauses will be added via append through the Header parse.
     }
 }
 
