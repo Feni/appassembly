@@ -1,9 +1,10 @@
-import { Queue } from "@appassembly/shared"
+import { Queue, isFunction } from "@appassembly/shared"
 import { 
     LiteralNode, IdentifierNode, OperatorNode, 
     KEYWORD_TABLE, syntaxError,
-    CONTINUE_BLOCK, START_BLOCK, END_BLOCK
+    CONTINUE_BLOCK, START_BLOCK, END_BLOCK, TOKEN_OPERATOR, ASTNode
 } from "./parser"
+import { astToExpr } from "./compiler";
 
 const DELIMITERS = new Set(['(', ')', '[', ']', 
 // '{', '}', 
@@ -194,7 +195,7 @@ function parseSymbol(it) {
 
     // assert: token != "" since caller checks if is delimiter
     if(token in KEYWORD_TABLE) {
-        return OperatorNode(KEYWORD_TABLE[token], char_start, it.index)
+        return KEYWORD_TABLE[token].build_ast_node(char_start, it.index)
     } else {
         return IdentifierNode(token, char_start, it.index)
     }
@@ -205,7 +206,7 @@ function parseKeyword(it, length) {
     let kw = it.lookahead(length);
     if(kw.length == length && kw in KEYWORD_TABLE) {
         it.next(length)
-        return OperatorNode(KEYWORD_TABLE[kw], char_start, it.index + 2)
+        return KEYWORD_TABLE[kw].build_ast_node(char_start, it.index + 2)
     }
 }
 
@@ -254,9 +255,33 @@ function parseWhitespace(it) {
     return undefined
 }
 
+function isMultipartStart(token) {
+    if(token.node_type == TOKEN_OPERATOR) {
+        let keyword = token.operator.keyword;
+        return keyword === "else" || keyword === "not" || keyword === "is"
+    }
+    return false
+}
+
+function mergeMultipartTokens(start, end) {
+    let token = start.operator.keyword + " " + end.operator.keyword;
+    return OperatorNode(KEYWORD_TABLE[token], start.char_start, end.char_end)
+}
+
+function addMultipart(it, multipart_start, current_token, expected) {
+    // Check if it's the expected two-word single-token or two separate tokens
+    if(current_token.node_type == TOKEN_OPERATOR && current_token.operator.keyword == expected) {
+        it.tokens.push(mergeMultipartTokens(multipart_start, current_token));
+    } else {
+        it.tokens.push(multipart_start);
+        it.tokens.push(current_token);
+    }
+}
+
 export function lex(expr) {
     // Index - shared mutable closure var
     let it = new LexIterator(expr);
+    let multipart_token = null;
 
     // Match against the starting value of each type of token
     while(it.hasNext()) {
@@ -281,15 +306,37 @@ export function lex(expr) {
             if(!token) {
                 it.next();
             }
-
         } else {
             token = parseSymbol(it);    // identifiers
         }
 
         // Note: Token may be a parsed empty string or zero, but never ""
         if(token !== undefined) {
-            it.tokens.push(token)
+            // Queue up multi-part tokens like else if, not in, is not.
+            switch(multipart_token ? multipart_token.operator.keyword : "") {
+                case "else":    // Merge if else-if. Add separately otherwise.
+                    addMultipart(it, multipart_token, token, "if")
+                    multipart_token = null;
+                    break;
+                case "not":     // Check if not in
+                    addMultipart(it, multipart_token, token, "in")
+                    multipart_token = null;
+                    break;
+                case "is":      // Check if is not
+                    addMultipart(it, multipart_token, token, "not")
+                    multipart_token = null;
+                    break;
+                default:
+                    if(isMultipartStart(token)) {
+                        multipart_token = token;
+                    } else {
+                        it.tokens.push(token)
+                    }
+            }
         }
+    }
+    if(multipart_token) {
+        it.tokens.push(multipart_token);
     }
 
     // End all active blocks

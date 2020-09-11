@@ -532,7 +532,7 @@ class ConditionalClauseExpr extends Expr {
     
     isTerminal() {
         // Condition is left blank for the terminal "else" clause.
-        return this.condition == null
+        return this.condition === null
     }
 
     emitJS(target) {
@@ -549,7 +549,6 @@ class ConditionalClauseExpr extends Expr {
             return cond_code
         } else {
             // Else clause. No condition, just body.
-            
             return this.body.emitJS(target)
         }
     }
@@ -567,14 +566,13 @@ class ConditionalClauseExpr extends Expr {
     static parse(cell, node) {
         if(node.value.length == 2) {    // Tuple of Predicate, Body
             let predicateNode = node.value[0];
-
-            if(predicateNode.node_type !== "(else)") {
+            if(predicateNode.node_type !== "(else)" && predicateNode.node_type !== "(else if)") {
                 syntaxError("Unexpected node found in condition " + node.value[0])
             }
 
             // Extract the inner predicate clause condition from the predicate branch.
-            // predicateNode.left = (if) node. .left of that is the actual condition code.
-            let condition = astToExpr(cell, predicateNode.left.left);
+            let condition = astToExpr(cell, predicateNode.left);
+            
             // assert: predicateNode.right & value are null.
             let body = astToExpr(cell, node.value[1]);
             return new ConditionalClauseExpr(cell, node, condition, body);
@@ -604,15 +602,18 @@ class ConditionalExpr extends Expr {
             // console.log(treeify.asTree(this.conditions[this.conditions.length - 1].debug(), true))
             return false;
         }
+
+        if(node.node_type != TOKEN_HEADER) {    return false }
+        
         // Validate - this is an else/else-if clause.
-        if(node.node_type != TOKEN_HEADER || node.value[0].node_type != "(else)") {
-            return false
+        if(node.value[0].node_type === "(else)" || node.value[0].node_type === "(else if)") {
+            let branch = ConditionalClauseExpr.parse(cell, node);
+            this.conditions[this.conditions.length - 1].alternative = branch;
+            this.conditions.push(branch)
+            return true;
         }
 
-        let branch = ConditionalClauseExpr.parse(cell, node);
-        this.conditions[this.conditions.length - 1].alternative = branch;
-        this.conditions.push(branch)
-        return true;
+        return false
     }
 
     debug() {
@@ -893,7 +894,7 @@ export function astToExpr(cell, node) {
         case "(range)":
             return RangeExpr.parse(cell, node)
         default:
-            console.log("Unknown AST node type: " + node.node_type);
+            syntaxError("Unknown AST node type: " + node.node_type);
     }
 }
 

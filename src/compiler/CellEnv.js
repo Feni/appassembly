@@ -131,8 +131,9 @@ export class CellEnv {
         if(cell.error || cell.id in env.cyclic_deps) { return }
         if(cell.expr_node) {
             console.log("Cell: " + cell.getCellName() + "\n\n" + treeify.asTree(cell.expr_node.debug(), true));
+        } else {
+            traverseDownCell(cell, env.debugAll);
         }
-        traverseDownCell(cell, env.debugAll);
     }
 
     findDependencies(cell_id) {

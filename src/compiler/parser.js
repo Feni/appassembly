@@ -21,7 +21,7 @@ export const TOKEN_CONTINUE_BLOCK = "(continueblock)";  // Same indentation leve
 export const TOKEN_END_BLOCK = "(endblock)";            // Decrease indentation level
 export const TOKEN_WHERE = "(where)";       // a[]
 export const TOKEN_ARRAY = "(array)";       // [1, 2, 3]
-export const TOKEN_HEADER = "(header)";
+export const TOKEN_HEADER = "(header)";     // head: 
 export const TOKEN_GROUPING = "(grouping)"
 export const TOKEN_COND = "(if)";           // if x < 10:
 export const TOKEN_GUARD = "(guard)";
@@ -30,8 +30,13 @@ export const TOKEN_THEN = "(then)";
 export const TOKEN_DEFAULT = "(default)";
 export const TOKEN_APPLY = "apply";     // TODO: Consistency
 export const TOKEN_MEMBER = "(member)";
-export const TOKEN_RANGE = "(range)";
+export const TOKEN_RANGE = "(range)";       // ...
 export const TOKEN_COMMA = "(comma)";
+
+// New
+export const TOKEN_ELIF = "(else if)";
+export const TOKEN_NOT_IN = "(not in)";
+export const TOKEN_IS_NOT = "(is not)";
 
 class ParseIterator extends QIter {
     constructor(queue) {
@@ -61,6 +66,18 @@ class Keyword {
     }
     null_denotation(node, token_stream) { console.log("Null denotation not found for: " + this.keyword); }
     left_denotation(left, node, token_stream) { console.log("Left denotation not found: " + this.keyword); }
+
+    static get_null_denotation(node_type) {
+        return (node, token_stream) => {
+            node.node_type = node_type
+            return node
+        }
+    }
+
+    build_ast_node(char_start, char_end) {
+        return OperatorNode(this, char_start, char_end)
+    }
+    
 }
 
 class Literal extends Keyword {
@@ -71,6 +88,10 @@ class Literal extends Keyword {
     null_denotation(node, token_stream) {
         node.node_type = TOKEN_LITERAL
         return node;
+    }
+
+    build_ast_node(char_start, char_end) {
+        return LiteralNode(this.value, char_start, char_end)
     }
 }
 
@@ -175,7 +196,6 @@ class Grouping extends Mixfix {
             return ned(node, tokenStream);
         }
     }
-
 }
 
 const ID_OP = new Identifier(TOKEN_IDENTIFIER);
@@ -282,15 +302,24 @@ DEF_OP.left_denotation = (left, node, tokenStream) => {
 }
 
 
-const COND = new Mixfix("if", 20, Prefix.get_null_denotation(TOKEN_COND), Infix.get_left_denotation(TOKEN_GUARD, 20));
-COND.null_denotation = (node, token_stream) => {
-    node.left = expression(token_stream, DEF_OP_LBP);
-    node.node_type = TOKEN_COND
-    return node;
+function get_header_null_denotation(node_type) {
+    return (node, token_stream) => {
+        node.left = expression(token_stream, DEF_OP_LBP)
+        node.node_type = node_type
+        return node;
+    }
 }
-const COND_THEN = new Mixfix("then", 20, Prefix.get_null_denotation(TOKEN_THEN), Infix.get_left_denotation(TOKEN_THEN, 20));
-const COND_ELSE = new Mixfix("else", 20, Prefix.get_null_denotation(TOKEN_ELSE), Infix.get_left_denotation(TOKEN_ELSE, 20));
-const COND_DEFAULT = new Mixfix("default", 20, Prefix.get_null_denotation(TOKEN_DEFAULT), Infix.get_left_denotation(TOKEN_DEFAULT, 20));
+
+// "if" is the prefix before the predicate in a conditional. 
+// It's the infix between the signature and guard in a guard clause.
+const COND = new Mixfix("if", 20, get_header_null_denotation(TOKEN_COND), Infix.get_left_denotation(TOKEN_GUARD, 20));
+
+const COND_ELSE = new Keyword("else", 20)
+COND_ELSE.null_denotation = Keyword.get_null_denotation(TOKEN_ELSE);
+
+new Prefix("else if", 20, Prefix.get_null_denotation(TOKEN_ELIF))
+
+// const COND_DEFAULT = new Mixfix("default", 20, Prefix.get_null_denotation(TOKEN_DEFAULT), Infix.get_left_denotation(TOKEN_DEFAULT, 20));
 
 let RANGE = new Keyword("..", 11);
 RANGE.null_denotation = (node, token_stream) => {
@@ -355,6 +384,10 @@ new InfixRight("**", 88)
 // Prefix: when used as Not
 // Infix: "not in" TODO
 new Mixfix("not", 110, Prefix.get_null_denotation())  // was 60. Changed to 110
+
+new Infix("not in", 110)
+
+new Infix("is not", 110)
 
 new Infix(".", 150, Infix.get_left_denotation(TOKEN_MEMBER, 150), TOKEN_MEMBER)
 

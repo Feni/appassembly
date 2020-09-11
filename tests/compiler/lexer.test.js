@@ -101,3 +101,62 @@ test('lex attribute access', () => {
         ["name", TOKEN_IDENTIFIER]
     ]);
 })
+
+
+test('lex multipart tokens', () => {
+    let result = flatten_tokens(lex('if(condition)'));
+    expect(result).toEqual([
+        ["if", TOKEN_OPERATOR], 
+        ["(", TOKEN_OPERATOR],
+        ["condition", TOKEN_IDENTIFIER],
+        [")", TOKEN_OPERATOR]
+    ]);
+
+    result = flatten_tokens(lex('else if(condition)'));
+    expect(result).toEqual([
+        ["else if", TOKEN_OPERATOR],    // Expected: Single else if
+        ["(", TOKEN_OPERATOR],
+        ["condition", TOKEN_IDENTIFIER],
+        [")", TOKEN_OPERATOR]
+    ]);
+
+    result = flatten_tokens(lex('else:'));
+    expect(result).toEqual([
+        ["else", TOKEN_OPERATOR],
+        [":", TOKEN_OPERATOR],
+    ]);
+
+    result = flatten_tokens(lex('not true'));
+    expect(result).toEqual([
+        ["not", TOKEN_OPERATOR],
+        [true, TOKEN_LITERAL],
+    ]);
+   
+    result = flatten_tokens(lex('is true'));
+    expect(result).toEqual([
+        ["is", TOKEN_OPERATOR],
+        [true, TOKEN_LITERAL],
+    ]);
+
+    result = flatten_tokens(lex('is not true'));
+    expect(result).toEqual([
+        ["is not", TOKEN_OPERATOR],
+        [true, TOKEN_LITERAL],
+    ]);
+
+    result = flatten_tokens(lex('in list'));
+    expect(result).toEqual([
+        ["in", TOKEN_OPERATOR],
+        ["list", TOKEN_IDENTIFIER],
+    ]);
+
+    result = flatten_tokens(lex('not in list'));
+    expect(result).toEqual([
+        ["not in", TOKEN_OPERATOR],
+        ["list", TOKEN_IDENTIFIER],
+    ]);
+
+    
+
+
+})
