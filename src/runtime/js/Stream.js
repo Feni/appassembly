@@ -62,7 +62,7 @@ export class Stream {
         if(index < this.__cached.length) {
             return this.__cached[index]
         } else {
-            if(this.sized && index >= this.length) {
+            if(this.is_sized && index >= this.length) {
                 // Skip iteration if accessing out of bounds
                 // TODO: Friendly error message
                 throw Error("Index out of bounds")
@@ -200,7 +200,7 @@ export class Stream {
             }
         ])
         this.copyFlags(s);
-        if(this.sized && this.length > 0) {
+        if(this.is_sized && this.length > 0) {
             s.length = this.length - 1;
         }
         return s;
@@ -251,7 +251,7 @@ export class Stream {
         let s = this.clone();
         s.sources.push(stream)
         // Update flags
-        if(s.sized && stream.sized) {
+        if(s.is_sized && stream.is_sized) {
             s.length = s.length + stream.length
         } else {
             s.is_sized = false;
@@ -295,7 +295,7 @@ export class Stream {
                 yield i
             }
         }])
-        s.sized = true;
+        s.is_sized = true;
         s.length = Math.ceil((stop-start) / step)
 
         return s;
@@ -320,7 +320,8 @@ export class Stream {
                 if(before_sub.length > 0) {
                     let sub_step = getStep(before_sub);
                     let div_step = getStep(before_div);
-
+                    console.log("Before div")
+                    console.log(before_div)
                     
                     if(sub_step !== false) {
                         is_add_step = true;
@@ -352,19 +353,22 @@ export class Stream {
                         for(var i = start; i > end; i += step) {    yield i     }
                     }])
                 }
-                s.sized = true;
-                s.length = Math.ceil(Math.abs(stop-start) / Math.abs(step))
+                s.is_sized = true;
+                s.length = Math.ceil(Math.abs(end-start) / Math.abs(step))
             } else {
-                if(step > 0) {
+                console.log("Start: " + start + " end " + end)
+                if(step > 1) {
                     s = new Stream([function* () {
                         for(var i = start; i < end; i *= step) {    yield i     }
                     }])
-                } else {
+                } else {    // Both fractional steps and negative steps are descending.
                     s = new Stream([function* () {
                         for(var i = start; i > end; i *= step) {    yield i     }
                     }])
                 }
-                // TODO: Calculate size
+                s.is_sized = true
+                // TODO: This is a tricky bit of code. Validate this thoroughly.
+                s.length = ((Math.log2(Math.abs(end)) - Math.log2(Math.abs(start))) / Math.log2(Math.abs(step)))
             }
             
             if(inclusive) {
@@ -376,13 +380,16 @@ export class Stream {
         } else {
             // Nothing after. Infinite stream.
             if(is_add_step) {
-                return new Stream([function* () {
-                        for(var i = start; true; i += step) {   yield i     }
+                let s = new Stream([function* () {
+                    for(var i = start; true; i += step) {   yield i     }
                 }])
+                return s;
             } else {
-                return new Stream([function* () {
-                        for(var i = start; true; i *= step) {   yield i     }
+                let s = new Stream([function* () {
+                    for(var i = start; true; i *= step) {   yield i     }
                 }])
+                s.is_sized = false;
+                return s
             }
         }
     }
@@ -396,7 +403,7 @@ export class Stream {
             }
         }])
         s.__cached = arr
-        s.sized = true;
+        s.is_sized = true;
         s.length = arr.length;
         return s;
     }

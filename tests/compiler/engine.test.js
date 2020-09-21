@@ -184,7 +184,40 @@ test('Generator ranges', () => {
     expect(Array.from(result[1].value.iter())).toEqual([1, 3, 5, 7, 9])
     expect(Array.from(result[2].value.first(5))).toEqual([5, 10, 15, 20, 25])
     expect(Array.from(result[3].value.iter())).toEqual([100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0])
+});
 
+
+test('Constant step range lengths', () => {
+    let prog = [
+        { expr: '[1..10]' }, 
+        { expr: '[1, 3 .. 10]' }, 
+        { expr: '[5, 10 .. 100]' }, 
+        { expr: '[100, 90, .., 10, 0]' }, 
+    ]
+    let result = evalExprs(prog);
+    expect(result[0].value.length).toEqual(9)
+    expect(result[1].value.length).toEqual(5)
+    expect(result[2].value.length).toEqual(19)
+    expect(result[3].value.length).toEqual(11)
+});
+
+test('Multiplicative step range lengths', () => {
+    let prog = [
+        { expr: '[2, 4, 8 .. 64]' }, 
+        { expr: '[2, 4, 8, .., 64]' }, 
+        { expr: '[4, 8, 16 .. 64]' }, 
+        { expr: '[2, 4, 8 .. 1024]' }, 
+        { expr: '[1024, 512, 256 .. 2]' }, 
+    ]
+    let result = evalExprs(prog);
+    expect(result[0].value.length).toEqual(5)
+    expect(result[1].value.length).toEqual(6)
+    expect(result[2].value.length).toEqual(4)
+    expect(result[3].value.length).toEqual(9)
+    expect(result[4].value.length).toEqual(9)
+
+    // TODO: This deserves additional test cases.
+    // Other powers than 2, negative start/ends, etc.
 });
 
 test('Expr blocks', () => {
