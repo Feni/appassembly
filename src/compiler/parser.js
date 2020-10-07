@@ -1,5 +1,6 @@
-import { QIter } from "@appassembly/shared"
+import { QIter, SyntaxError } from "@appassembly/shared"
 import { lex } from "./lexer"
+
 
 /*
 Implements a Pratt parser to construct the AST with precedence climbing.
@@ -401,13 +402,6 @@ const PARENS = new Grouping("(", 150, TOKEN_GROUPING, TOKEN_APPLY, ")");
 // TODO: Is there a LED for this? f{ a }
 const CURLY_BK = new Prefix("{", 150,
 Grouping.get_null_denotation(TOKEN_HEADER, "}"))
-
-class SyntaxError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "SyntaxError"
-    }
-}
 
 export function syntaxError(message, index) {
     let err = new SyntaxError(message);

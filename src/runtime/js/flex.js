@@ -1,4 +1,5 @@
-import { genID, isObject, isFunction } from "@appassembly/shared"
+import { genID, isObject, isFunction, RuntimeError } from "@appassembly/shared"
+
 
 export class Obj {
     /*
@@ -137,8 +138,10 @@ export class Obj {
             let val = this.findMatch(args);
             if(val) {
                 return val(...args)
+            } else {
+                // TODO: Improve error context
+                throw new RuntimeError("Function signature does not match call.")
             }
-            console.log("No match found in call");
         }
     }
 
